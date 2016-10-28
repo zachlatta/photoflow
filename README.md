@@ -25,4 +25,4 @@ I do not recommend using Photoflow for your own use. It will suddenly change wit
 
 ## License
 
-See [`LICENSE`][LICENSE].
+See [`LICENSE`](LICENSE).
