@@ -47,7 +47,7 @@ class PhotoFlow < Thor
 
 		inbox_metadata = JSON.parse(File.read(INBOX_METADATA_PATH))
 
-		Dir.entries(inbox).each do |filename|
+		Dir.entries(INBOX_PATH).each do |filename|
 			next unless inbox_metadata.key? filename
 
 			file_path = File.join(INBOX_PATH, filename)
