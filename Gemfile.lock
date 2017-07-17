@@ -1,6 +1,7 @@
 GEM
   remote: https://rubygems.org/
   specs:
+    byebug (9.0.6)
     exif (1.0.1)
     ffi (1.9.14)
     ffi-gphoto2 (0.7.0)
@@ -11,9 +12,10 @@ PLATFORMS
   ruby
 
 DEPENDENCIES
+  byebug
   exif
   ffi-gphoto2
   thor
 
 BUNDLED WITH
-   1.12.5
+   1.15.1

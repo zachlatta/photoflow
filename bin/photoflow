@@ -25,7 +25,7 @@ class PhotoFlow < Thor
 				path = File.join(INBOX_PATH, file.name)
 				creation_time = file.info.mtime
 
-				if file_imported? path, creation_time
+				if file_imported? file.name, creation_time
 					puts "#{file.name} already imported, skipping..."
 				else
 					inbox_metadata[file.name] = creation_time
@@ -35,6 +35,9 @@ class PhotoFlow < Thor
 
 					puts "Imported #{file.name} to #{path}!"
 				end
+
+				# Prepare the file for deallocation
+				file = nil
 			end
 		end
 	end
