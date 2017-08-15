@@ -8,91 +8,91 @@ require 'json'
 require 'byebug'
 
 class PhotoFlow < Thor
-	BASE_PATH = ENV['PHOTOFLOW_IMPORT_DEST']
-	INBOX_PATH = File.join(BASE_PATH, 'inbox')
-	INBOX_METADATA_PATH = File.join(INBOX_PATH, '_metadata.json')
+  BASE_PATH = ENV['PHOTOFLOW_IMPORT_DEST']
+  INBOX_PATH = File.join(BASE_PATH, 'inbox')
+  INBOX_METADATA_PATH = File.join(INBOX_PATH, '_metadata.json')
 
-	desc 'import', 'Import latest photos from attached camera to inbox'
-	def import
-		inbox_metadata = {}
-		if File.exists? INBOX_METADATA_PATH
-			inbox_metadata = JSON.parse(File.read(INBOX_METADATA_PATH))
-		end
+  desc 'import', 'Import latest photos from attached camera to inbox'
+  def import
+    inbox_metadata = {}
+    if File.exists? INBOX_METADATA_PATH
+      inbox_metadata = JSON.parse(File.read(INBOX_METADATA_PATH))
+    end
 
-		GPhoto2::Camera.first do |camera|
-			files_to_transfer = files_in_camera(camera.filesystem)
-			files_to_transfer.each do |file|
-				path = File.join(INBOX_PATH, file.name)
-				creation_time = file.info.mtime
+    GPhoto2::Camera.first do |camera|
+      files_to_transfer = files_in_camera(camera.filesystem)
+      files_to_transfer.each do |file|
+        path = File.join(INBOX_PATH, file.name)
+        creation_time = file.info.mtime
 
-				if file_imported? file.name, creation_time
-					puts "#{file.name} already imported, skipping..."
-				else
-					inbox_metadata[file.name] = creation_time
+        if file_imported? file.name, creation_time
+          puts "#{file.name} already imported, skipping..."
+        else
+          inbox_metadata[file.name] = creation_time
 
-					file.save(path)
-					File.write(INBOX_METADATA_PATH, inbox_metadata.to_json)
+          file.save(path)
+          File.write(INBOX_METADATA_PATH, inbox_metadata.to_json)
 
-					puts "Imported #{file.name} to #{path}!"
-				end
+          puts "Imported #{file.name} to #{path}!"
+        end
 
-				# Prepare the file for deallocation
-				file = nil
-			end
-		end
-	end
+        # Prepare the file for deallocation
+        file = nil
+      end
+    end
+  end
 
-	desc 'move_from_inbox', 'Move photos out of inbox'
-	def move_from_inbox
-		unless File.exists? INBOX_METADATA_PATH
-			raise "import must be run before this command!"
-		end
+  desc 'move_from_inbox', 'Move photos out of inbox'
+  def move_from_inbox
+    unless File.exists? INBOX_METADATA_PATH
+      raise "import must be run before this command!"
+    end
 
-		inbox_metadata = JSON.parse(File.read(INBOX_METADATA_PATH))
+    inbox_metadata = JSON.parse(File.read(INBOX_METADATA_PATH))
 
-		Dir.entries(INBOX_PATH).each do |filename|
-			next unless inbox_metadata.key? filename
+    Dir.entries(INBOX_PATH).each do |filename|
+      next unless inbox_metadata.key? filename
 
-			file_path = File.join(INBOX_PATH, filename)
+      file_path = File.join(INBOX_PATH, filename)
 
-			new_name = formatted_file_name(filename, Time.parse(inbox_metadata[filename]))
-			dest_path = File.join(BASE_PATH, new_name)
+      new_name = formatted_file_name(filename, Time.parse(inbox_metadata[filename]))
+      dest_path = File.join(BASE_PATH, new_name)
 
-			File.rename(file_path, dest_path)
-			inbox_metadata.delete filename
-			File.write(INBOX_METADATA_PATH, inbox_metadata.to_json)
-		end
-	end
+      File.rename(file_path, dest_path)
+      inbox_metadata.delete filename
+      File.write(INBOX_METADATA_PATH, inbox_metadata.to_json)
+    end
+  end
 
-	private
+  private
 
-	def file_imported?(filename, creation_time)
-		file_in_path?(BASE_PATH, formatted_file_name(filename, creation_time)) ||
-			file_in_path?(INBOX_PATH, filename)
-	end
+  def file_imported?(filename, creation_time)
+    file_in_path?(BASE_PATH, formatted_file_name(filename, creation_time)) ||
+      file_in_path?(INBOX_PATH, filename)
+  end
 
-	def file_in_path?(path, filename)
-		file_path = File.join(path, filename)
-		File.exist? file_path
-	end
+  def file_in_path?(path, filename)
+    file_path = File.join(path, filename)
+    File.exist? file_path
+  end
 
-	def formatted_file_name(filename, creation_time)
-		fmted_creation_time = creation_time.utc.iso8601
-		extension = File.extname(filename)
-		original_filename = File.basename(filename, extension)
+  def formatted_file_name(filename, creation_time)
+    fmted_creation_time = creation_time.utc.iso8601
+    extension = File.extname(filename)
+    original_filename = File.basename(filename, extension)
 
-		"#{fmted_creation_time}_#{original_filename}#{extension.downcase}"
-	end
+    "#{fmted_creation_time}_#{original_filename}#{extension.downcase}"
+  end
 
-	def files_in_camera(camera_filesystem)
-		files = camera_filesystem.files
+  def files_in_camera(camera_filesystem)
+    files = camera_filesystem.files
 
-		camera_filesystem.folders.each do |folder|
-			files += files_in_camera(folder)
-		end
+    camera_filesystem.folders.each do |folder|
+      files += files_in_camera(folder)
+    end
 
-		files
-	end
+    files
+  end
 end
 
 PhotoFlow.start
